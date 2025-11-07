@@ -5,8 +5,18 @@ from fastapi import HTTPException, status
 from typing import List
 from app import models, schemas
 
+def get_shorts_by_video_id(db: Session, video_id: str) -> models.Shorts | None:
+    return db.query(models.Shorts).filter(models.Shorts.video_id == video_id).first()
+
 def create_shorts(db: Session, video_id: str, url: str) -> models.Shorts:
     # POST /shorts/
+    db_shorts_exists = get_shorts_by_video_id(db=db, video_id=video_id)
+    if db_shorts_exists:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 등록된 영상입니다."
+        )
+    
     db_shorts = models.Shorts(video_id=video_id, url=url, view_count=0)
 
     try:
@@ -18,7 +28,7 @@ def create_shorts(db: Session, video_id: str, url: str) -> models.Shorts:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="이미 등록된 영상입니다."
+            detail="이미 등록된 영상입니다.."
         )
 def get_shorts_by_views(db: Session, limit: int = 100) -> list[models.Shorts]:
     # GET /shorts
