@@ -1,0 +1,41 @@
+# docker-compose.yml
+
+services:
+  # 서비스 명
+  db:
+    # 사용할 이미지
+    image: postgres
+    # 컨테이너 실행 시 재시작
+    restart: always
+    # 컨테이너명 설정
+    container_name: film_db
+    # 환경 변수 설정
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    # 접근 포트 설정 (컨테이너 외부:컨테이너 내부)
+    ports:
+      - "5434:5432"
+
+  api:
+    build: .
+    container_name: film_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./app:/code/app
+      - ./scheduler:/code/scheduler
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+
+  scheduler:
+    build: .
+    container_name: youtube_scheduler
+    command: sh -c "while true; do python scheduler/update_views.py; sleep 600; done"
+    volumes:
+      - ./app:/code/app
+      - ./scheduler:/code/scheduler
+    env_file:
+      - .env
