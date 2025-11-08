@@ -14,7 +14,7 @@ def parse_video_id(url: str) -> str:
     if parsed_url.hostname == 'youtu.be':
         video_id = parsed_url.path.lstrip('/')
         if video_id:
-            return video_id[0]
+            return video_id
     
     if parsed_url.hostname in ('youtube.com', 'www.youtube.com', 'm.youtube.com'):
         # '/shorts/' 형태

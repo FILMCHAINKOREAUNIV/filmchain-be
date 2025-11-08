@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 from app import models, schemas, crud, services
@@ -8,6 +9,15 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="쇼츠 조회수 확인 API",
+)
+
+# CORS 설정 추가 (프론트엔드 연동을 위해 필수)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 개발 환경용 (프로덕션에서는 특정 도메인만 허용)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 def get_db():
