@@ -43,6 +43,10 @@ def update_views():
                     continue
                 # 조회수 갱신 (값이 없으면 기존 값 유지)
                 r.view_count = int(data.get("view_count", r.view_count or 0))
+                # 제목 갱신 (None이면 변경하지 않음)
+                title = data.get("title")
+                if title is not None:
+                    r.title = title
                 # 해시태그 문자열 갱신 (None이면 변경하지 않음)
                 hashtags = data.get("hashtags")
                 if hashtags is not None:

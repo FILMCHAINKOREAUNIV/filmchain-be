@@ -12,6 +12,8 @@ class Shorts(Base):
 
     url = Column(String, nullable=False)
 
+    title = Column(String, nullable=True)  # 영상 제목
+
     hashtags = Column(String, nullable=True)
 
     view_count = Column(BigInteger, default=0)

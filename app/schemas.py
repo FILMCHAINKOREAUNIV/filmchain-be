@@ -4,10 +4,12 @@ from typing import Optional, List
 
 class ShortsCreateRequest(BaseModel):
     url: str
+    hashtags: Optional[str] = None
 
 class ShortsBase(BaseModel):
     video_id: str
     url: str
+    title: Optional[str] = None
     hashtags: Optional[str] = None
     view_count: int
 

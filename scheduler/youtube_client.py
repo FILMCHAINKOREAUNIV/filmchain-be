@@ -14,8 +14,8 @@ def _get_client():
 
 def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[object]]]:
     """
-    최대 50개의 비디오 ID에 대해 조회수(statistics.viewCount)와 태그(snippet.tags)를 가져옴
-    반환 형식: { 비디오ID: {"view_count": int, "hashtags": Optional[str]} }
+    최대 50개의 비디오 ID에 대해 조회수(statistics.viewCount), 제목(snippet.title), 태그(snippet.tags)를 가져옴
+    반환 형식: { 비디오ID: {"view_count": int, "title": Optional[str], "hashtags": Optional[str]} }
     """
     result: Dict[str, Dict[str, Optional[object]]] = {}
     if not video_ids:
@@ -40,6 +40,9 @@ def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[obje
             except Exception:
                 view_count = 0
 
+            # 영상 제목 가져오기
+            title = snippet.get("title")
+
             tags = snippet.get("tags") or []
             hashtags: Optional[str] = None
             if tags:
@@ -56,7 +59,7 @@ def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[obje
                     hashtags = " ".join(normalized)
 
             if vid:
-                result[vid] = {"view_count": view_count, "hashtags": hashtags}
+                result[vid] = {"view_count": view_count, "title": title, "hashtags": hashtags}
     except HttpError as e:
         raise e
 

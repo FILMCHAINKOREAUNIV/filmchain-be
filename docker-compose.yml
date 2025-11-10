@@ -16,7 +16,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     # 접근 포트 설정 (컨테이너 외부:컨테이너 내부)
     ports:
-      - "5434:5432"
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -26,12 +26,12 @@ services:
   api:
     build: .
     container_name: film_api
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 3000 --reload
     volumes:
       - ./app:/code/app
       - ./scheduler:/code/scheduler
     ports:
-      - "8000:8000"
+      - "3000:3000"
     env_file:
       - .env
     depends_on:
