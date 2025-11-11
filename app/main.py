@@ -91,3 +91,29 @@ def get_shorts_by_video_id_endpoint(video_id: str, db: Session = Depends(get_db)
 @app.get("/")
 def read_root():
     return {"message": "API 서버가 실행 중입니다."}
+
+
+
+
+@app.post("/shorts/vote", response_model=schemas.HashtagVoteResponse, status_code=status.HTTP_201_CREATED)
+def vote_hashtag_endpoint(
+    tag: str = Query(..., description="투표할 해시태그"),
+    db: Session = Depends(get_db)
+):
+    """
+    해시태그 투표 +1
+    호출 예시: POST http://localhost:3000/shorts/vote?tag=movie1
+    """
+    return crud.vote_hashtag(db, tag)
+
+
+@app.get("/shorts/vote", response_model=List[schemas.HashtagVoteResponse])
+def get_votes_endpoint(
+    tags: List[str] = Query(..., alias="tag"),
+    db: Session = Depends(get_db)
+):
+    """
+    여러 해시태그의 투표수 조회
+    호출 예시: GET http://localhost:3000/shorts/vote?tag=movie1&tag=movie2
+    """
+    return crud.get_votes_for_hashtags(db, tags)
