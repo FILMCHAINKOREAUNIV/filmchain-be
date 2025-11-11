@@ -100,10 +100,17 @@ def vote_hashtag_endpoint(
     tag: str = Query(..., description="투표할 해시태그"),
     db: Session = Depends(get_db)
 ):
+    
     """
     해시태그 투표 +1
-    호출 예시: POST http://localhost:3000/shorts/vote?tag=movie1
+    호출 예시: POST http://localhost:3000/shorts/vote?tag=귀멸의칼날
     """
+
+    clean = tag.strip().lstrip('#')
+    if not clean:
+        raise HTTPException(status_code=400, detail="해시태그가 비어 있습니다.")
+
+    return crud.vote_hashtag(db, clean)
     return crud.vote_hashtag(db, tag)
 
 
@@ -114,6 +121,6 @@ def get_votes_endpoint(
 ):
     """
     여러 해시태그의 투표수 조회
-    호출 예시: GET http://localhost:3000/shorts/votes?tag=movie1&tag=movie2
+    호출 예시: GET http://localhost:3000/shorts/votes?tag=연세대&tag=고려대
     """
     return crud.get_votes_for_hashtags(db, tags)

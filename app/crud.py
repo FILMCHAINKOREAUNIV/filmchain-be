@@ -135,6 +135,8 @@ def get_shorts_by_hashtag(db: Session, tag: str, limit: int = 100) -> list[model
 def vote_hashtag(db: Session, tag: str) -> models.HashtagVote:
     """특정 해시태그 투표 +1"""
     clean_tag = tag.strip().lstrip('#')
+    if not clean_tag:
+        raise HTTPException(status_code=400, detail="해시태그가 비어 있습니다.")
     db_vote = (
         db.query(models.HashtagVote)
         .filter(models.HashtagVote.hashtag == clean_tag)
