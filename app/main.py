@@ -83,6 +83,17 @@ def get_votes_endpoint(
     """
     return crud.get_votes_for_hashtags(db, tags)
 
+@app.delete("/shorts/vote", response_model=schemas.HashtagVoteResponse)
+def cancel_vote_endpoint(
+    tag: str = Query(..., description="취소할 해시태그"),
+    db: Session = Depends(get_db)
+):
+    """
+    특정 해시태그 투표 취소 (-1)
+    호출 예시: DELETE http://localhost:3000/shorts/vote?tag=귀멸의칼날
+    """
+    return crud.cancel_vote(db, tag)
+
 
 @app.put("/shorts/{video_id}/refresh", response_model=schemas.Shorts)
 def refresh_shorts_views(video_id: str, db: Session = Depends(get_db)):

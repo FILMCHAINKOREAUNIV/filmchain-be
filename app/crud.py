@@ -189,3 +189,22 @@ def get_votes_for_hashtags(db: Session, tags: list[str]) -> list[schemas.Hashtag
                 )
             )
     return result
+
+def cancel_vote(db: Session, tag: str) -> models.HashtagVote:
+    """특정 해시태그 투표 -1 (취소)"""
+    clean_tag = tag.strip().lstrip('#')
+    db_vote = db.query(models.HashtagVote).filter(
+        models.HashtagVote.hashtag == clean_tag
+    ).first()
+
+    if db_vote is None:
+        # DB에 없는 경우 (예: 잘못된 태그)
+        raise HTTPException(status_code=404, detail="해시태그를 찾을 수 없습니다.")
+
+    # 최소 0 이하로는 떨어지지 않게 방어
+    db_vote.vote_count = max(0, db_vote.vote_count - 1)
+
+    db.commit()
+    db.refresh(db_vote)
+    return db_vote
+
