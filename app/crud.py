@@ -131,3 +131,40 @@ def get_shorts_by_hashtag(db: Session, tag: str, limit: int = 100) -> list[model
         .order_by(models.Shorts.view_count.desc())\
         .limit(limit)\
         .all()
+
+
+
+def vote_hashtag(db: Session, tag: str) -> models.HashtagVote:
+    """특정 해시태그 투표 +1"""
+    clean_tag = tag.strip().lstrip('#')
+    db_vote = db.query(models.HashtagVote).filter(
+        models.HashtagVote.hashtag == clean_tag
+    ).first()
+
+    if db_vote is None:
+        db_vote = models.HashtagVote(hashtag=clean_tag, vote_count=1)
+        db.add(db_vote)
+    else:
+        db_vote.vote_count += 1
+
+    db.commit()
+    db.refresh(db_vote)
+    return db_vote
+
+
+def get_votes_for_hashtags(db: Session, tags: list[str]) -> list[models.HashtagVote]:
+    """여러 해시태그의 투표수 조회"""
+    clean_tags = [t.strip().lstrip('#') for t in tags]
+    votes = db.query(models.HashtagVote).filter(
+        models.HashtagVote.hashtag.in_(clean_tags)
+    ).all()
+
+    # 요청한 태그 중 DB에 없는 건 0으로 채워서 반환
+    votes_map = {v.hashtag: v for v in votes}
+    result = []
+    for t in clean_tags:
+        if t in votes_map:
+            result.append(votes_map[t])
+        else:
+            result.append(models.HashtagVote(hashtag=t, vote_count=0))
+    return result

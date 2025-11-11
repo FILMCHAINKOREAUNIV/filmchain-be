@@ -23,3 +23,11 @@ class Shorts(ShortsBase):
 class HashtagStat(BaseModel):
     hashtag: str
     total_views: int
+
+class HashtagVoteBase(BaseModel):
+    hashtag: str
+
+class HashtagVoteResponse(HashtagVoteBase):
+    vote_count: int
+    class Config:
+        orm_mode = True
