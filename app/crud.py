@@ -132,39 +132,58 @@ def get_shorts_by_hashtag(db: Session, tag: str, limit: int = 100) -> list[model
         .limit(limit)\
         .all()
 
-
-
 def vote_hashtag(db: Session, tag: str) -> models.HashtagVote:
     """특정 해시태그 투표 +1"""
     clean_tag = tag.strip().lstrip('#')
-    db_vote = db.query(models.HashtagVote).filter(
-        models.HashtagVote.hashtag == clean_tag
-    ).first()
+    db_vote = (
+        db.query(models.HashtagVote)
+        .filter(models.HashtagVote.hashtag == clean_tag)
+        .first()
+    )
 
     if db_vote is None:
         db_vote = models.HashtagVote(hashtag=clean_tag, vote_count=1)
         db.add(db_vote)
     else:
-        db_vote.vote_count += 1
+        db_vote.vote_count = (db_vote.vote_count or 0) + 1
 
     db.commit()
     db.refresh(db_vote)
     return db_vote
 
 
-def get_votes_for_hashtags(db: Session, tags: list[str]) -> list[models.HashtagVote]:
+def get_votes_for_hashtags(db: Session, tags: list[str]) -> list[schemas.HashtagVoteResponse]:
     """여러 해시태그의 투표수 조회"""
+    # 1) 태그 깨끗하게
     clean_tags = [t.strip().lstrip('#') for t in tags]
-    votes = db.query(models.HashtagVote).filter(
-        models.HashtagVote.hashtag.in_(clean_tags)
-    ).all()
 
-    # 요청한 태그 중 DB에 없는 건 0으로 채워서 반환
-    votes_map = {v.hashtag: v for v in votes}
-    result = []
-    for t in clean_tags:
-        if t in votes_map:
-            result.append(votes_map[t])
+    # 2) 한번에 조회
+    rows = (
+        db.query(models.HashtagVote)
+        .filter(models.HashtagVote.hashtag.in_(clean_tags))
+        .all()
+    )
+
+    # 3) 빠른 접근을 위해 dict화
+    rows_map = {row.hashtag: row for row in rows}
+
+    # 4) 요청 순서를 유지하면서 리턴 (프론트에서 왼쪽/오른쪽 매칭하려면 순서 중요)
+    result: list[schemas.HashtagVoteResponse] = []
+    for tag in clean_tags:
+        row = rows_map.get(tag)
+        if row:
+            result.append(
+                schemas.HashtagVoteResponse(
+                    hashtag=row.hashtag,
+                    vote_count=row.vote_count,
+                )
+            )
         else:
-            result.append(models.HashtagVote(hashtag=t, vote_count=0))
+            # DB에 없으면 0표로 내려줌
+            result.append(
+                schemas.HashtagVoteResponse(
+                    hashtag=tag,
+                    vote_count=0,
+                )
+            )
     return result
