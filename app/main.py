@@ -72,6 +72,18 @@ def get_shorts_by_hashtag_endpoint(
     shorts_list = crud.get_shorts_by_hashtag(db=db, tag=tag, limit=limit)
     return shorts_list
 
+@app.get("/shorts/votes", response_model=List[schemas.HashtagVoteResponse])
+def get_votes_endpoint(
+    tags: List[str] = Query(..., alias="tag"),
+    db: Session = Depends(get_db)
+):
+    """
+    여러 해시태그의 투표수 조회
+    호출 예시: GET http://localhost:3000/shorts/votes?tag=연세대&tag=고려대
+    """
+    return crud.get_votes_for_hashtags(db, tags)
+
+
 @app.put("/shorts/{video_id}/refresh", response_model=schemas.Shorts)
 def refresh_shorts_views(video_id: str, db: Session = Depends(get_db)):
     """특정 영상의 조회수를 즉시 업데이트"""
@@ -114,13 +126,3 @@ def vote_hashtag_endpoint(
     return crud.vote_hashtag(db, tag)
 
 
-@app.get("/shorts/votes", response_model=List[schemas.HashtagVoteResponse])
-def get_votes_endpoint(
-    tags: List[str] = Query(..., alias="tag"),
-    db: Session = Depends(get_db)
-):
-    """
-    여러 해시태그의 투표수 조회
-    호출 예시: GET http://localhost:3000/shorts/votes?tag=연세대&tag=고려대
-    """
-    return crud.get_votes_for_hashtags(db, tags)
