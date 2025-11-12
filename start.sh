@@ -5,7 +5,7 @@ set -e
 
 echo "Starting Gunicorn API server in background..."
 # 1. Gunicorn 서버를 "백그라운드"에서 실행 (&)
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000 &
+gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:3000 &
 
 echo "Starting Scheduler loop in foreground..."
 # 2. DB가 준비될 때까지 10초 대기
