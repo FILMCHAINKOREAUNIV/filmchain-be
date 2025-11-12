@@ -5,7 +5,7 @@ from typing import List
 from app import models, schemas, crud, services
 from .database import engine, SessionLocal
 
-models.Base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=engine, checkfirst=True)
 
 app = FastAPI(
     title="쇼츠 조회수 확인 API",
