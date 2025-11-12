@@ -48,6 +48,7 @@ def update_views():
                 if title is not None:
                     r.title = title
                 # 해시태그 문자열 갱신 (None이면 변경하지 않음)
+                # YouTube API에서 가져온 해시태그를 그대로 사용 (실제 영상에 달린 해시태그)
                 hashtags = data.get("hashtags")
                 if hashtags is not None:
                     r.hashtags = hashtags

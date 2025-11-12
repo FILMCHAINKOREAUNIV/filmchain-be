@@ -18,7 +18,7 @@ def create_shorts(db: Session, video_id: str, url: str, hashtags: Optional[str] 
             detail="이미 등록된 영상입니다."
         )
     
-    # 초기값으로 등록 (해시태그 포함)
+    # 초기값으로 등록 (해시태그 포함, YouTube API에서 실제 해시태그를 가져옴)
     db_shorts = models.Shorts(video_id=video_id, url=url, view_count=0, hashtags=hashtags)
 
     try:
@@ -26,7 +26,7 @@ def create_shorts(db: Session, video_id: str, url: str, hashtags: Optional[str] 
         db.commit()
         db.refresh(db_shorts)
         
-        # 등록 후 즉시 조회수 조회
+        # 등록 후 즉시 조회수 조회 및 해시태그 검증
         if fetch_views:
             try:
                 stats_map = fetch_video_stats([video_id])
@@ -37,23 +37,78 @@ def create_shorts(db: Session, video_id: str, url: str, hashtags: Optional[str] 
                     title = data.get("title")
                     if title is not None:
                         db_shorts.title = title
-                    # YouTube API에서 가져온 해시태그가 있으면 병합, 없으면 요청으로 받은 해시태그 유지
+                    # YouTube API에서 가져온 해시태그를 그대로 사용 (실제 영상에 달린 해시태그)
                     youtube_hashtags = data.get("hashtags")
                     if youtube_hashtags is not None:
-                        # 기존 해시태그와 YouTube 해시태그 병합
-                        if db_shorts.hashtags:
-                            # 중복 제거를 위해 집합 사용
-                            existing_tags = set(db_shorts.hashtags.split())
-                            youtube_tags = set(youtube_hashtags.split())
-                            all_tags = existing_tags | youtube_tags
-                            db_shorts.hashtags = " ".join(sorted(all_tags))
+                        # YouTube API에서 가져온 해시태그를 그대로 사용
+                        db_shorts.hashtags = youtube_hashtags
+                        
+                        # 해시태그 검증: #filmchain과 영화별 해시태그가 모두 있는지 확인
+                        hashtag_set = set(youtube_hashtags.split())
+                        has_filmchain = "#filmchain" in hashtag_set or "filmchain" in hashtag_set
+                        
+                        # 영화별 해시태그 확인 (요청으로 받은 해시태그와 비교)
+                        if hashtags:
+                            # 요청 해시태그에서 # 제거하고 비교
+                            expected_tag = hashtags.strip().lstrip('#').lower()
+                            has_movie_tag = False
+                            for tag in hashtag_set:
+                                tag_clean = tag.strip().lstrip('#').lower()
+                                if tag_clean == expected_tag:
+                                    has_movie_tag = True
+                                    break
+                            
+                            # #filmchain과 영화별 해시태그가 모두 없으면 에러
+                            if not has_filmchain or not has_movie_tag:
+                                db.delete(db_shorts)
+                                db.commit()
+                                missing_tags = []
+                                if not has_filmchain:
+                                    missing_tags.append("#filmchain")
+                                if not has_movie_tag:
+                                    missing_tags.append(hashtags)
+                                raise HTTPException(
+                                    status_code=status.HTTP_400_BAD_REQUEST,
+                                    detail=f"영상에 필수 해시태그가 없습니다: {', '.join(missing_tags)}. YouTube 영상에 {', '.join(missing_tags)} 해시태그를 추가해주세요."
+                                )
                         else:
-                            db_shorts.hashtags = youtube_hashtags
+                            # 영화별 해시태그가 요청에 없으면 #filmchain만 확인
+                            if not has_filmchain:
+                                db.delete(db_shorts)
+                                db.commit()
+                                raise HTTPException(
+                                    status_code=status.HTTP_400_BAD_REQUEST,
+                                    detail="영상에 #filmchain 해시태그가 없습니다. YouTube 영상에 #filmchain 해시태그를 추가해주세요."
+                                )
+                    else:
+                        # YouTube 해시태그가 없으면 에러
+                        db.delete(db_shorts)
+                        db.commit()
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="영상에 해시태그가 없습니다. YouTube 영상에 #filmchain과 영화별 해시태그를 추가해주세요."
+                        )
                     db.commit()
                     db.refresh(db_shorts)
+                else:
+                    # YouTube API에서 영상 정보를 가져오지 못한 경우
+                    db.delete(db_shorts)
+                    db.commit()
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="유효한 YouTube 영상을 찾을 수 없습니다. URL을 확인해주세요."
+                    )
+            except HTTPException:
+                # HTTPException은 그대로 전달
+                raise
             except Exception as e:
-                # YouTube API 호출 실패해도 등록은 성공 (조회수는 0으로 유지)
-                print(f"조회수 조회 실패 (영상 등록은 성공): {e}")
+                # YouTube API 호출 실패 시 에러
+                db.delete(db_shorts)
+                db.commit()
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"영상 정보를 가져올 수 없습니다: {str(e)}. URL을 확인해주세요."
+                )
         
         return db_shorts
     except IntegrityError:
@@ -89,6 +144,7 @@ def update_shorts_views(db: Session, video_id: str) -> models.Shorts:
                 db_shorts.title = title
             hashtags = data.get("hashtags")
             if hashtags is not None:
+                # YouTube API에서 가져온 해시태그를 그대로 사용
                 db_shorts.hashtags = hashtags
             db.commit()
             db.refresh(db_shorts)
@@ -102,6 +158,7 @@ def update_shorts_views(db: Session, video_id: str) -> models.Shorts:
 
 def get_stats_for_hashtags(db: Session, tags: List[str]) -> List[schemas.HashtagStat]:
     # GET /shorts/compare
+    # #filmchain과 영화별 해시태그 둘 다 포함하는 영상만 집계
     stats_list =[]
 
     if not tags:
@@ -109,9 +166,12 @@ def get_stats_for_hashtags(db: Session, tags: List[str]) -> List[schemas.Hashtag
     
     for tag in tags:
         clean_tag = tag.strip().lstrip('#')
-        search_pattern = f"%#{clean_tag}%"
+        # #filmchain과 영화별 해시태그 둘 다 포함하는지 확인
+        movie_tag_pattern = f"%#{clean_tag}%"
+        filmchain_pattern = "%#filmchain%"
         total_views_query = db.query(func.sum(models.Shorts.view_count))\
-            .filter(models.Shorts.hashtags.ilike(search_pattern))\
+            .filter(models.Shorts.hashtags.ilike(movie_tag_pattern))\
+            .filter(models.Shorts.hashtags.ilike(filmchain_pattern))
             
         total_views = total_views_query.scalar()
 
@@ -123,11 +183,13 @@ def get_stats_for_hashtags(db: Session, tags: List[str]) -> List[schemas.Hashtag
     return stats_list
 
 def get_shorts_by_hashtag(db: Session, tag: str, limit: int = 100) -> list[models.Shorts]:
-    """해시태그로 쇼츠 목록 조회"""
+    """해시태그로 쇼츠 목록 조회 - #filmchain과 영화별 해시태그 둘 다 포함하는 영상만 반환"""
     clean_tag = tag.strip().lstrip('#')
-    search_pattern = f"%#{clean_tag}%"
+    movie_tag_pattern = f"%#{clean_tag}%"
+    filmchain_pattern = "%#filmchain%"
     return db.query(models.Shorts)\
-        .filter(models.Shorts.hashtags.ilike(search_pattern))\
+        .filter(models.Shorts.hashtags.ilike(movie_tag_pattern))\
+        .filter(models.Shorts.hashtags.ilike(filmchain_pattern))\
         .order_by(models.Shorts.view_count.desc())\
         .limit(limit)\
         .all()
