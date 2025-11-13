@@ -41,22 +41,29 @@ def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[obje
                 view_count = 0
 
             # 영상 제목 가져오기
-            title = snippet.get("title")
-
-            tags = snippet.get("tags") or []
+            title = snippet.get("title") or ""
+            description = snippet.get("description") or ""
+            
+            def extract_hashtags(text: str) -> List[str]:
+                return [w for w in text.split() if w.startswith("#")]
+            
+            hashtags_set = set()
+            meta_tags = snippet.get("tags") or []
             hashtags: Optional[str] = None
-            if tags:
-                normalized = []
-                for t in tags:
+
+            if meta_tags:
+                for t in meta_tags:
                     t = (t or "").strip()
                     if not t:
                         continue
                     if not t.startswith("#"):
                         t = f"#{t}"
-                    normalized.append(t)
-                if normalized:
-                    # 공백으로 구분된 하나의 문자열로 저장(예: "#tag1 #tag2")
-                    hashtags = " ".join(normalized)
+                    hashtags_set.add(t)
+
+            for w in extract_hashtags(title) + extract_hashtags(description):
+                hashtags_set.add(w.strip())
+
+            hashtags = " ".join(sorted(hashtags_set)) if hashtags_set else None
 
             if vid:
                 result[vid] = {"view_count": view_count, "title": title, "hashtags": hashtags}
