@@ -37,6 +37,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+git checkout release/1.0
 
   scheduler:
     build: .
