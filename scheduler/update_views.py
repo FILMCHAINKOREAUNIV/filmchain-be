@@ -20,7 +20,7 @@ def update_views():
     print("스케줄러: 'update_views' 작업 시작..")
 
     # 안전하게 테이블이 없으면 생성
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine, checkfirst=True)
 
     db = SessionLocal()
     try:
