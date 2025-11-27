@@ -37,7 +37,7 @@ def get_db():
 def create_shorts_entry(
     shorts_request: schemas.ShortsCreateRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[user_models.User] = Depends(get_current_user_optional)
+    current_user: user_models.User = Depends(get_current_user)
 ):
     # URL 파싱
     video_id = services.parse_video_id(url=shorts_request.url)
@@ -49,7 +49,7 @@ def create_shorts_entry(
         url=shorts_request.url, 
         hashtags=shorts_request.hashtags,  # 추가
         fetch_views=True,
-        user_id=current_user.id if current_user else None
+        user_id=current_user.id
     )
     return db_shorts
 
