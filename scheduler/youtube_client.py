@@ -43,27 +43,32 @@ def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[obje
             # 영상 제목 가져오기
             title = snippet.get("title") or ""
             description = snippet.get("description") or ""
+
+            tags = snippet.get("tags") or []
             
-            def extract_hashtags(text: str) -> List[str]:
-                return [w for w in text.split() if w.startswith("#")]
+            # 제목과 설명에서 해시태그 추출
+            import re
+            text_hashtags = re.findall(r"#\S+", title + " " + description)
             
-            hashtags_set = set()
-            meta_tags = snippet.get("tags") or []
+            all_tags = set()
+            
+            # 기존 태그 처리
+            for t in tags:
+                t = (t or "").strip()
+                if not t:
+                    continue
+                if not t.startswith("#"):
+                    t = f"#{t}"
+                all_tags.add(t)
+                
+            # 텍스트에서 추출한 해시태그 처리
+            for t in text_hashtags:
+                all_tags.add(t)
+
             hashtags: Optional[str] = None
-
-            if meta_tags:
-                for t in meta_tags:
-                    t = (t or "").strip()
-                    if not t:
-                        continue
-                    if not t.startswith("#"):
-                        t = f"#{t}"
-                    hashtags_set.add(t)
-
-            for w in extract_hashtags(title) + extract_hashtags(description):
-                hashtags_set.add(w.strip())
-
-            hashtags = " ".join(sorted(hashtags_set)) if hashtags_set else None
+            if all_tags:
+                # 공백으로 구분된 하나의 문자열로 저장(예: "#tag1 #tag2")
+                hashtags = " ".join(sorted(list(all_tags)))
 
             if vid:
                 result[vid] = {"view_count": view_count, "title": title, "hashtags": hashtags}
