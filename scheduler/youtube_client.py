@@ -41,7 +41,6 @@ def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[obje
                 view_count = 0
 
             # 영상 제목 가져오기
-            # 영상 제목 가져오기
             title = snippet.get("title") or ""
             description = snippet.get("description") or ""
 
