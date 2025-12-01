@@ -16,7 +16,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     # 접근 포트 설정 (컨테이너 외부:컨테이너 내부)
     ports:
-      - "5434:5432"
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s

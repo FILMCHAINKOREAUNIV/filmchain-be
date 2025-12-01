@@ -147,4 +147,4 @@ def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user": schemas.UserResponse.model_validate(user)}
