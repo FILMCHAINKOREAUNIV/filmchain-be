@@ -35,10 +35,15 @@ def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[obje
             stats = item.get("statistics", {})
             snippet = item.get("snippet", {})
             view_count_str = stats.get("viewCount", "0")
+            like_count_str = stats.get("likeCount", "0")
             try:
                 view_count = int(view_count_str)
             except Exception:
                 view_count = 0
+            try:
+                like_count = int(like_count_str)
+            except Exception:
+                like_count = 0
 
             # 영상 제목 가져오기
             title = snippet.get("title") or ""
@@ -71,7 +76,10 @@ def fetch_video_stats(video_ids: List[str]) -> Dict[str, Dict[str, Optional[obje
                 hashtags = " ".join(sorted(list(all_tags)))
 
             if vid:
-                result[vid] = {"view_count": view_count, "title": title, "hashtags": hashtags}
+                result[vid] = {"view_count": view_count,
+                               "like_count": like_count,
+                               "title": title, 
+                               "hashtags": hashtags}
     except HttpError as e:
         raise e
 
