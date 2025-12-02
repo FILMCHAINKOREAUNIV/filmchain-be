@@ -26,13 +26,14 @@ def create_shorts(db: Session, video_id: str, url: str, hashtags: Optional[str] 
         db.commit()
         db.refresh(db_shorts)
         
-        # 등록 후 즉시 조회수 조회 및 해시태그 검증
+        # 등록 후 즉시 조회수, 좋아요 수 조회 및 해시태그 검증
         if fetch_views:
             try:
                 stats_map = fetch_video_stats([video_id])
                 if video_id in stats_map:
                     data = stats_map[video_id]
                     db_shorts.view_count = int(data.get("view_count", 0))
+                    db_shorts.like_count = int(data.get("like_count", 0))
                     # YouTube API에서 가져온 제목 저장
                     title = data.get("title")
                     if title is not None:
@@ -128,7 +129,7 @@ def get_shorts_by_views(db: Session, limit: int = 100) -> list[models.Shorts]:
         .all()
 
 def update_shorts_views(db: Session, video_id: str) -> models.Shorts:
-    """특정 영상의 조회수를 즉시 업데이트"""
+    """특정 영상의 조회수, 좋아요 수를 즉시 업데이트"""
     db_shorts = get_shorts_by_video_id(db=db, video_id=video_id)
     if not db_shorts:
         raise HTTPException(
@@ -141,6 +142,7 @@ def update_shorts_views(db: Session, video_id: str) -> models.Shorts:
         if video_id in stats_map:
             data = stats_map[video_id]
             db_shorts.view_count = int(data.get("view_count", db_shorts.view_count or 0))
+            db_shorts.like_count = int(data.get("like_count", db_shorts.like_count or 0))
             # YouTube API에서 가져온 제목 업데이트
             title = data.get("title")
             if title is not None:
