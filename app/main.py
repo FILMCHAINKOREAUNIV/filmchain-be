@@ -11,6 +11,20 @@ from typing import Optional
 
 models.Base.metadata.create_all(bind=engine, checkfirst=True)
 
+@app.on_event("startup")
+def startup_event():
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            # like_count 컬럼 확인 및 추가
+            conn.execute(text("ALTER TABLE shorts ADD COLUMN IF NOT EXISTS like_count BIGINT DEFAULT 0"))
+            # user_id 컬럼 확인 및 추가 (혹시 없는 경우를 대비)
+            conn.execute(text("ALTER TABLE shorts ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)"))
+            conn.commit()
+            print("Startup: Database schema updated (columns added if missing).")
+        except Exception as e:
+            print(f"Startup: Database schema update failed: {e}")
+
 app = FastAPI(
     title="쇼츠 조회수 확인 API",
 )
