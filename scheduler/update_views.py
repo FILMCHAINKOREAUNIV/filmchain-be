@@ -14,7 +14,7 @@ def _chunks(items: List[str], size: int) -> Iterable[List[str]]:
 def update_views():
     """
     DB에 저장된 모든 Shorts 레코드의 video_id를 모아
-    YouTube API로 조회수/태그를 가져와 view_count, hashtags를 갱신
+    YouTube API로 조회수/좋아요 수/태그를 가져와 view_count, hashtags를 갱신
     50개씩 배치로 호출하여 API 호출 한도를 고려
     """
     print("스케줄러: 'update_views' 작업 시작..")
@@ -43,6 +43,7 @@ def update_views():
                     continue
                 # 조회수 갱신 (값이 없으면 기존 값 유지)
                 r.view_count = int(data.get("view_count", r.view_count or 0))
+                r.like_count = int(data.get("like_count", r.like_count or 0))
                 # 제목 갱신 (None이면 변경하지 않음)
                 title = data.get("title")
                 if title is not None:

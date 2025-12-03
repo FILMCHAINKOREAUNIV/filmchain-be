@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, func, BigInteger
+from sqlalchemy import Column, Integer, String, DateTime, func, BigInteger, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 from app.database import Base
 
@@ -18,7 +19,12 @@ class Shorts(Base):
 
     view_count = Column(BigInteger, default=0)
 
+    like_count = Column(BigInteger, default=0)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    owner = relationship("app.user.models.User", back_populates="shorts")
 
 class HashtagVote(Base):
     __tablename__ = "hastag_votes"

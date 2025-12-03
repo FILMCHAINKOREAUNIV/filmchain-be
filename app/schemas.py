@@ -12,6 +12,7 @@ class ShortsBase(BaseModel):
     title: Optional[str] = None
     hashtags: Optional[str] = None
     view_count: int
+    like_count: int
 
 class Shorts(ShortsBase):
     id: int
