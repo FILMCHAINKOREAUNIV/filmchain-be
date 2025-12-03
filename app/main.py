@@ -4,12 +4,12 @@ from sqlalchemy.orm import Session
 from typing import List
 from app import models, schemas, crud, services
 from .database import engine, SessionLocal
+from app.user import router as user_router
+from app.user import models as user_models
+from app.user.dependencies import get_current_user, get_current_user_optional
+from typing import Optional
 
 models.Base.metadata.create_all(bind=engine, checkfirst=True)
-
-app = FastAPI(
-    title="쇼츠 조회수 확인 API",
-)
 
 @app.on_event("startup")
 def startup_event():
@@ -24,6 +24,10 @@ def startup_event():
             print("Startup: Database schema updated (columns added if missing).")
         except Exception as e:
             print(f"Startup: Database schema update failed: {e}")
+
+app = FastAPI(
+    title="쇼츠 조회수 확인 API",
+)
 
 app.include_router(user_router.router)
 
@@ -46,7 +50,8 @@ def get_db():
 @app.post("/shorts", response_model=schemas.Shorts, status_code=status.HTTP_201_CREATED)
 def create_shorts_entry(
     shorts_request: schemas.ShortsCreateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: user_models.User = Depends(get_current_user)
 ):
     # URL 파싱
     video_id = services.parse_video_id(url=shorts_request.url)
@@ -57,9 +62,18 @@ def create_shorts_entry(
         video_id=video_id, 
         url=shorts_request.url, 
         hashtags=shorts_request.hashtags,  # 추가
-        fetch_views=True
+        fetch_views=True,
+        user_id=current_user.id
     )
     return db_shorts
+
+@app.get("/shorts/me", response_model=List[schemas.Shorts])
+def get_my_shorts(
+    db: Session = Depends(get_db),
+    current_user: user_models.User = Depends(get_current_user)
+):
+    """내가 등록한 쇼츠 목록 조회"""
+    return crud.get_shorts_by_user(db=db, user_id=current_user.id)
 
 # 조회수 높은 순으로 쇼츠 목록 반환
 # @app.get("/shorts", response_model=List[schemas.Shorts])
