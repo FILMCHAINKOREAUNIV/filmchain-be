@@ -11,6 +11,10 @@ from typing import Optional
 
 models.Base.metadata.create_all(bind=engine, checkfirst=True)
 
+app = FastAPI(
+    title="쇼츠 조회수 확인 API",
+)
+
 @app.on_event("startup")
 def startup_event():
     from sqlalchemy import text
@@ -24,10 +28,6 @@ def startup_event():
             print("Startup: Database schema updated (columns added if missing).")
         except Exception as e:
             print(f"Startup: Database schema update failed: {e}")
-
-app = FastAPI(
-    title="쇼츠 조회수 확인 API",
-)
 
 app.include_router(user_router.router)
 
