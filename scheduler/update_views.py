@@ -3,6 +3,7 @@ from typing import Iterable, List
 
 from app.database import SessionLocal, engine
 from app.models import Base, Shorts
+from app.user.models import User
 from scheduler.youtube_client import fetch_video_stats
 
 
