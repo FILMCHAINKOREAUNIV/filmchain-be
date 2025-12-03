@@ -23,6 +23,15 @@ def update_views():
     # 안전하게 테이블이 없으면 생성
     Base.metadata.create_all(bind=engine, checkfirst=True)
 
+    # 스케줄러에서도 DB 스키마 업데이트 (like_count 컬럼 추가)
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE shorts ADD COLUMN IF NOT EXISTS like_count BIGINT DEFAULT 0"))
+            conn.commit()
+        except Exception as e:
+            print(f"스케줄러: DB 스키마 업데이트 실패 (이미 존재할 수 있음): {e}")
+
     db = SessionLocal()
     try:
         # 업데이트 대상(Shorts 테이블의 모든 행)을 불러옴
