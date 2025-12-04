@@ -32,9 +32,14 @@ def startup_event():
 app.include_router(user_router.router)
 
 # CORS 설정 추가 (프론트엔드 연동을 위해 필수)
+origins = [
+    "http://localhost:3000",
+    "https://filmchain.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 개발 환경용 (프로덕션에서는 특정 도메인만 허용)
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
